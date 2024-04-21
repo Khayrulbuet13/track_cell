@@ -9,17 +9,19 @@ from cell import Cell
 from detectors import Detectors
 from tracker import Tracker
 from cell import Cell
-
+from tqdm import tqdm
 
 
 # Input parameters
 blur, dilate, cellSize = 5,3,100
 BLOB_RADIUS_THRESH = 7
 DEBUG = False
-cameraFolder = "test"
-resultsFolder = "out"
-traceStart = 430
-traceEnd = 830
+cameraFolder = "/media/mdi220/A806DEEB06DEB990/T4_Notch_day1/T4-1"
+resultsFolder = "/media/mdi220/A806DEEB06DEB990/T4_Notch_day1/T4-1_out"
+# traceStart = 430
+# traceEnd = 830
+traceStart = 530
+traceEnd = 730
 
 detector = Detectors(blur, dilate, BLOB_RADIUS_THRESH, DEBUG)
 
@@ -37,22 +39,25 @@ track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
 images = []
 orig_images = []
 cell_length = []
-# Loop Through Contents of TiffFolder
-for f in (sorted(os.listdir(cameraFolder))[::1]):
-#starting = 5000 # 0
-#for k, f in enumerate(os.listdir( cameraFolder )[starting:] ):
-  if f.endswith(".tiff"):
-    # Capture frame-by-frame
-    frame = cv2.imread(cameraFolder + "/" + f)
-    
-    print(currFrame)
+cell_boxes = []
 
-    if frame is None:
-        currFrame = currFrame + 1
-        break
 
-    #frame = cv2.flip(frame, 1)
-    #frame = cv2.flip(frame, 1)
+# Setup VideoWriter
+fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+out = None
+
+
+# Loop through contents of camera folder
+file_list = sorted([f for f in os.listdir(cameraFolder) if f.endswith(".tiff")])
+for filename in tqdm(file_list, desc='Processing TIFF files'):
+    frame = cv2.imread(os.path.join(cameraFolder, filename))
+
+    if out is None:  # Initialize the VideoWriter once we know frame size
+        height, width = frame.shape[:2]
+        out = cv2.VideoWriter('output.avi', fourcc, 20.0, (width, height))
+        if not out.isOpened():
+            print("Failed to open video writer")
+            break  # Exit if VideoWriter cannot open
 
     images.append(frame)
     
@@ -61,10 +66,11 @@ for f in (sorted(os.listdir(cameraFolder))[::1]):
     orig_images.append(orig_frame)
 
     # Detect and return centeroids of the objects in the frame
-    centers, contours_refined = detector.Detect(frame)
+    centers, contours_refined, frame_boxes = detector.Detect(frame)
     radius = detector.Radius(frame, traceStart, traceEnd )
-    
     cell_length.append(radius)
+    cell_boxes.append(frame_boxes) 
+
 
     # If centroids are detected then track them
     if (len(centers) > 0):
@@ -130,7 +136,10 @@ for f in (sorted(os.listdir(cameraFolder))[::1]):
                         crop = photoFrame[(0):(photoFrame.shape[0]), (int(tracker.tracks[i].trace[cell.indexMiddleLineisPassed][0][0]) - int(cellSize)):(int(tracker.tracks[i].trace[cell.indexMiddleLineisPassed][0][0]) + int(cellSize))].copy()
                         cell.midCrop = crop
 
-                        cell.deformationIndex(max(cell_length[(currFrame - (len(tracker.tracks[i].trace) + tracker.tracks[i].skipped_frames) + cell.indexFirstLineisPassed):currFrame]))
+
+                        cell.deformationIndex(cell_boxes[(currFrame - (len(tracker.tracks[i].trace) + tracker.tracks[i].skipped_frames) + cell.indexFirstLineisPassed):currFrame])
+                        # Assuming you are within a loop where `i` is the index of the current track
+                       
                         # remove cell from being tracked again by setting initial position high
                         tracker.tracks[i].tracked = 1
 
@@ -139,18 +148,34 @@ for f in (sorted(os.listdir(cameraFolder))[::1]):
 
                         del cell
     
-    DEBUG = 1
+    # Draw vertical lines at traceStart and traceEnd
+    height = frame.shape[0]
+    cv2.line(frame, (traceStart, 0), (traceStart, height), (255, 0, 0), 2)  # Red line at traceStart
+    cv2.line(frame, (traceEnd, 0), (traceEnd, height), (255, 0, 0), 2)      # Red line at traceEnd
+
+
+    # for contour in contours_refined:
+    #     cv2.drawContours(frame, [contour], -1, (0, 255, 0), 1)
+
+    # Drawing boxes
+    # for x, y, w, h in frame_boxes:  
+    #     cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 1)
+    for frame_boxes in cell_boxes:
+        if frame_boxes:  # Checks if the list is not empty
+            for x, y, w, h in frame_boxes:
+                # Process each box, e.g., draw on frame
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 1)
+
+
+    out.write(frame)
+
+    DEBUG  = 0
     if DEBUG:
-        # Draw vertical lines at traceStart and traceEnd
-        height = frame.shape[0]
-        cv2.line(frame, (traceStart, 0), (traceStart, height), (255, 0, 0), 2)  # Red line at traceStart
-        cv2.line(frame, (traceEnd, 0), (traceEnd, height), (255, 0, 0), 2)      # Red line at traceEnd
-
-
-        for contour in contours_refined:
-            cv2.drawContours(frame, [contour], -1, (0, 255, 0), 1)
-            
-        cv2.imshow('Detected Contours', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
             break
     currFrame = currFrame + 1
+
+
+    # Release everything when job is finished
+out.release()
+cv2.destroyAllWindows()
