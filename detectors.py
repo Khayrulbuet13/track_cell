@@ -97,7 +97,7 @@ class Detectors(object):
                     cell_boxes.append([x, y, w, h])
 
                     if self.debug:  # Optionally display each contour
-                        cv2.drawContours(frame, [contour], -1, (0, 255, 0), 2)
+                        cv2.drawContours(frame, [contour], -1, (0, 255, 0), 1)
         
         if self.debug:
             cv2.imshow('Final Detection', frame)

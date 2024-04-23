@@ -3,3 +3,5 @@ test/*
 __pycache__/*
 track_cell-main/*
 dump/*
+.DS_Store
+T4-2_out/*

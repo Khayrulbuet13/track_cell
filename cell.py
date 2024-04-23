@@ -93,100 +93,72 @@ class Cell:
         
         np.savetxt(CSVpath, result, delimiter=",", fmt = '%1.f')
 
-
-    # def deformationIndex(self, cell_length):
-    #     print(cell_length)
-    #     deformationRatio=(cell_length-4)/(cell_length+4)
-        
-    #     txtPath = self.directory + "/DeformationRatio.txt"
-    #     file = open(txtPath, "w+")
-    #     file.write(str(deformationRatio))
-    #     #file.close()
-
-
-    # def deformationIndex(self, box):
-    #     """
-    #     Calculate deformation index either using radius or box dimensions.
-        
-    #     Args:
-    #         box: A tuple (x, y, w, h) representing the bounding box.
-    #              If provided, calculate deformation index based on box dimensions.
-        
-    #     Saves the deformation index to a file.
-    #     """
-    #     box = np.array(box).squeeze()
-        
-    #     dia_a = box[:, 2].max()  # Max of the third column (index 2)
-    #     dia_b = box[:, 3].min()  # Max of the fourth column (index 3)
-    #     if (dia_a + dia_b) != 0:
-    #         deformation_index = (dia_a - dia_b) / (dia_a + dia_b)
-    #     else:
-    #         deformation_index = 0  # Handle the case where w+h is 0 to avoid division by zero
-
-    #     # Save the calculated deformation index
-    #     txt_path = self.directory + "/DeformationIndex.txt"
-    #     with open(txt_path, "w+") as file:
-    #         file.write(str(deformation_index))
-    # def deformationIndex(self, boxes):
-    #     """
-    #     Calculate deformation index using the dimensions of bounding boxes.
-        
-    #     Args:
-    #         boxes: List of bounding boxes, where each box is formatted as [x, y, w, h].
-    #     """
-    #     if not boxes:
-    #         print("No boxes provided")
-    #         return
-
-    #     # Convert list of boxes to a numpy array for easier manipulation
-    #     box_array = np.array(boxes)
-
-    #     # Calculate the max width and min height across all boxes
-    #     dia_a = box_array[:, 2].max()  # Max width
-    #     dia_b = box_array[:, 3].min()  # Min height
-        
-    #     if (dia_a + dia_b) != 0:
-    #         deformation_index = (dia_a - dia_b) / (dia_a + dia_b)
-    #     else:
-    #         deformation_index = 0  # Avoid division by zero
-
-    #     # Save the calculated deformation index
-    #     txt_path = self.directory + "/DeformationIndex.txt"
-    #     with open(txt_path, "w+") as file:
-    #         file.write(str(deformation_index))
-
     def deformationIndex(self, boxes):
         """
-        Calculate deformation index using the width and height from bounding boxes.
+        Calculate deformation index using all width and height values from bounding boxes of each frame.
         
         Args:
-            boxes: List of lists, where each inner list contains [x, y, width, height] for each bounding box.
+            boxes: List of lists, where each inner list contains [x, y, width, height] for each bounding box
+                per frame.
         """
-        widths = []
-        heights = []
-
-        # Iterate through each frame's boxes
-        for frame_boxes in boxes:
-            for box in frame_boxes:
-                if len(box) == 4:  # Ensure the box is correctly formatted
-                    _, _, w, h = box
-                    widths.append(w)
-                    heights.append(h)
-
-        if widths and heights:  # Ensure there are dimensions to process
-            dia_a = max(widths)
-            dia_b = min(heights)
-            deformation_index = (dia_a - dia_b) / float(dia_a + dia_b) if (dia_a + dia_b) != 0 else 0
-        else:
-            deformation_index = 0  # Default to 0 if no boxes or valid dimensions are found
-
-        # Save the calculated deformation index
+        # Path to save the deformation index results
         txt_path = self.directory + "/DeformationIndex.txt"
-        with open(txt_path, "w+") as file:
-            file.write(str(deformation_index))
-            print("Deformation index saved to", txt_path)
 
-        return deformation_index  # Optional, if you need to use the value programmatically elsewhere
+        # Open the file once and write each frame's deformation index
+        with open(txt_path, "w+") as file:
+            for frame_boxes in boxes:
+                widths = [box[2] for box in frame_boxes if len(box) == 4]  # Collect all widths
+                heights = [box[3] for box in frame_boxes if len(box) == 4]  # Collect all heights
+
+                if widths and heights:
+                    deformation_indexes = []
+                    for w, h in zip(widths, heights):
+                        deformation_index = (w - h) / float(w + h) if (w + h) != 0 else 0
+                        deformation_indexes.append(deformation_index)
+
+                    # Average the deformation indexes for the frame to have a single measure
+                    avg_deformation_index = sum(deformation_indexes) / len(deformation_indexes) if deformation_indexes else 0
+                    file.write(f"{avg_deformation_index}\n")
+                    print(f"Deformation index for frame saved to {txt_path}: {avg_deformation_index}")
+                else:
+                    file.write("0\n")  # Default to 0 if no boxes or valid dimensions are found
+
+
+
+
+
+    # def deformationIndex(self, boxes):
+    #     """
+    #     Calculate deformation index using the width and height from bounding boxes.
+        
+    #     Args:
+    #         boxes: List of lists, where each inner list contains [x, y, width, height] for each bounding box.
+    #     """
+    #     widths = []
+    #     heights = []
+
+    #     # Iterate through each frame's boxes
+    #     for frame_boxes in boxes:
+    #         for box in frame_boxes:
+    #             if len(box) == 4:  # Ensure the box is correctly formatted
+    #                 _, _, w, h = box
+    #                 widths.append(w)
+    #                 heights.append(h)
+
+    #     if widths and heights:  # Ensure there are dimensions to process
+    #         dia_a = max(widths)
+    #         dia_b = min(heights)
+    #         deformation_index = (dia_a - dia_b) / float(dia_a + dia_b) if (dia_a + dia_b) != 0 else 0
+    #     else:
+    #         deformation_index = 0  # Default to 0 if no boxes or valid dimensions are found
+
+    #     # Save the calculated deformation index
+    #     txt_path = self.directory + "/DeformationIndex.txt"
+    #     with open(txt_path, "w+") as file:
+    #         file.write(str(deformation_index))
+    #         print("Deformation index saved to", txt_path)
+
+    #     return deformation_index  # Optional, if you need to use the value programmatically elsewhere
 
 
 
