@@ -176,3 +176,4 @@ class Tracker(object):
 
             self.tracks[i].trace.append(self.tracks[i].prediction)
             self.tracks[i].KF.lastResult = self.tracks[i].prediction
+            

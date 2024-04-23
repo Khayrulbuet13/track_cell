@@ -161,7 +161,6 @@ class Cell:
     #     return deformation_index  # Optional, if you need to use the value programmatically elsewhere
 
 
-
     def saveImage(self):
         #if the height and length of the image =/= Image Size(cellSize) //// x.shape[0] is height, x.shape[1] is width
         try:

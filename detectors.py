@@ -148,3 +148,4 @@ class Detectors(object):
                     
         
         return radius_max
+    
