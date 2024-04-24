@@ -44,6 +44,10 @@ blurSigma, minRadius, maxRadius, minThreshold, maxThreshold, batchSize, debug_mo
 # Define the directories
 dc = DirectoryChooser("Choose your folder")
 input_folder = dc.getDirectory()
+
+# Print where the files are being processed
+print("Processing files in:", input_folder)
+
 if input_folder is None:
     print("No input folder selected.")
     exit()
@@ -53,6 +57,8 @@ output_folder = dc.getDirectory()
 if output_folder is None:
     print("No output folder selected.")
     exit()
+
+destroy = 1
 
 # Constants for Particle Analysis
 paOptions = ParticleAnalyzer.SHOW_NONE | ParticleAnalyzer.ADD_TO_MANAGER
@@ -99,9 +105,16 @@ for start in range(0, total_files, batchSize):
 
             pa.setResultsTable(rt)
             pa.analyze(subtracted)
+            
             if rt.getCounter() > 0:
                 output_path = os.path.join(output_folder, file_name)
-                shutil.copy(image_path, output_path)
+                if destroy:
+                    shutil.move(image_path, output_path)
+                else:
+                    shutil.copy(image_path, output_path)
+            elif rt.getCounter() <= 0 and destroy:
+                os.remove(image_path)
+
             rt.reset()
 
         imp.close()

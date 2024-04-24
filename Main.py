@@ -16,13 +16,19 @@ from tqdm import tqdm
 blur, dilate, cellSize = 5,3,100
 BLOB_RADIUS_THRESH = 7
 DEBUG = False
-# cameraFolder = "/Volumes/Untitled/T4_Notch_day1/T4-2"
-cameraFolder = "test"
-resultsFolder = "out"
-# traceStart = 430
-# traceEnd = 830
-traceStart = 530
-traceEnd = 730
+# cameraFolder = "test"
+# cameraFolder = "/run/user/1000/gvfs/smb-share:server=128.180.65.44,share=e/BNF-Lab_Backup-V2/T4-Notch/T4-4/T4_Notch_day1_4_filtered"
+cameraFolder = "/media/mdi220/A806DEEB06DEB990/T4_Notch_day1/T4-3"
+resultsFolder = "T4_Notch_day1_B3_processed"
+
+print("Processing files in folder: ", cameraFolder)
+
+if not os.path.exists(resultsFolder):
+    os.makedirs(resultsFolder)
+traceStart = 430
+traceEnd = 830
+# traceStart = 530
+# traceEnd = 730
 detector = Detectors(blur, dilate, BLOB_RADIUS_THRESH, DEBUG)
 
 
@@ -37,7 +43,7 @@ track_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0),
                         (0, 255, 255), (255, 0, 255), (255, 127, 255),
                         (127, 0, 255), (127, 0, 127)]
 images = []
-orig_images = []
+# orig_images = []
 cell_length = []
 cell_boxes = []
 
@@ -45,7 +51,7 @@ cell_boxes = []
 # Setup VideoWriter
 fourcc = cv2.VideoWriter_fourcc(*'MJPG')
 out = None
-print(f'{resultsFolder}/output.avi')
+
 
 # Loop through contents of camera folder
 file_list = sorted([f for f in os.listdir(cameraFolder) if f.endswith(".tiff")])
@@ -63,7 +69,7 @@ for filename in tqdm(file_list, desc='Processing TIFF files'):
     
     # Make copy of original frame
     orig_frame = copy.copy(frame)
-    orig_images.append(orig_frame)
+    # orig_images.append(orig_frame)
 
     # Detect and return centeroids of the objects in the frame
     centers, contours_refined, frame_boxes = detector.Detect(frame)
@@ -165,6 +171,7 @@ for filename in tqdm(file_list, desc='Processing TIFF files'):
 
     DEBUG  = 0
     if DEBUG:
+        cv2.imshow('frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):  # Press 'q' to quit
             break
     currFrame = currFrame + 1

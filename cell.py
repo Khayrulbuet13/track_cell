@@ -119,7 +119,7 @@ class Cell:
                     # Average the deformation indexes for the frame to have a single measure
                     avg_deformation_index = sum(deformation_indexes) / len(deformation_indexes) if deformation_indexes else 0
                     file.write(f"{avg_deformation_index}\n")
-                    print(f"Deformation index for frame saved to {txt_path}: {avg_deformation_index}")
+                    # print(f"Deformation index for frame saved to {txt_path}: {avg_deformation_index}")
                 else:
                     file.write("0\n")  # Default to 0 if no boxes or valid dimensions are found
 
